@@ -14,9 +14,9 @@ const passwordDcrypt = async (password) => {
   }
 };
 
-const tokenFun = async (userAuth) => {
+const tokenFun = async (user) => {
   try {
-    const token = await jwt.sign({ userAuth: userAuth }, config.jwt_key);
+    const token = await jwt.sign({ user: user }, config.jwt_key);
     return token;
   } catch (error) {
     response.status(400).send(error.message);
@@ -152,21 +152,21 @@ const login = async (request, responce) => {
 };
 const updatePassword = async (request, responce) => {
   try {
-    const authUser = request.userAuth;
+    const authUser = request.user;
 
     const oldPassword = request.body.old_password;
     const newPassword = request.body.new_password;
 
     const checkPassword = await bcryptjs.compare(
       oldPassword,
-      authUser.userAuth.password
+      authUser.user.password
     );
 
     const passwordHash = await passwordDcrypt(newPassword);
 
     if (checkPassword) {
       await user.findByIdAndUpdate(
-        { _id: authUser.userAuth._id },
+        { _id: authUser.user._id },
         {
           $set: {
             password: passwordHash,
@@ -190,10 +190,10 @@ const updatePassword = async (request, responce) => {
 
 const updateProfile = async (request, responce) => {
   try {
-    const authUser = request.userAuth;
-
+    const authUser = request.user;
+   
     await user.findByIdAndUpdate(
-      { _id: authUser.userAuth._id },
+      { _id: authUser.user._id },
       {
         $set: {
           first_name: request.body.first_name ?? checkUser.first_name,
@@ -202,7 +202,7 @@ const updateProfile = async (request, responce) => {
       }
     );
 
-    const updateUser = await user.findOne({ _id: authUser.userAuth._id });
+    const updateUser = await user.findOne({ _id: authUser.user._id });
 
     return responce.status(200).send({
       status: true,
@@ -215,9 +215,9 @@ const updateProfile = async (request, responce) => {
 };
 const getProfile = async (request, response) => {
   try {
-    const authUser = request.userAuth;
+    const authUser = request.user;
 
-    const userProfile = await user.findOne({ _id: authUser.userAuth._id });
+    const userProfile = await user.findOne({ _id: authUser.user._id });
     // const userProfile = await user.findOne({ _id: request.body.id });
 
     if (!userProfile) {

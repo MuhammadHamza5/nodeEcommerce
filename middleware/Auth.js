@@ -11,7 +11,7 @@ const checkValidToken = async (request, responce, next) => {
   }
   try {
     const checkToken = await jwt.verify(token, config.jwt_key);
-    request.userAuth = checkToken;
+    request.user = checkToken;
   } catch (error) {
     responce.status(400).send({ message: "Token is not valide" });
   }

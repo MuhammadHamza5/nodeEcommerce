@@ -24,6 +24,12 @@ const upload = multer({ storage: storage });
 
 
 const authController = require('../controller/AuthController');
+const sellerDataController = require('../controller/SellerDataController');
+const productController = require('../controller/ProductController');
+const categoryController = require('../controller/CategoryController');
+const attributeController = require('../controller/AttributeController');
+
+
 app.post('/registerd', upload.single('image') ,authController.register);
 app.post('/login', authController.login);
 app.post('/update-password',auth, authController.updatePassword);
@@ -33,5 +39,27 @@ app.post('/reset-password', authController.resetPassword);
 app.post('/verify-otp', authController.verifyOtp);
 
 
+app.post('/seller/create-shop',auth, sellerDataController.createSellerShop);
+app.post('/seller/update-shop',auth, sellerDataController.updateSellerShop);
+app.get('/seller/shop',auth, sellerDataController.getSellerShop);
+
+// create product
+app.post('/seller/create-product',auth, productController.productCreate);
+app.post('/seller/update-product',auth, productController.productUpdate);
+app.get('/seller/products',auth, productController.products);
+
+// category
+app.post('/category/create',auth, categoryController.createCategory);
+app.post('/category/update',auth, categoryController.updateCategory);
+app.get('/categories', categoryController.categories);
+app.get('/category/:id', categoryController.categoryById);
+app.post('/category/delete',auth, categoryController.categoryDelete);
+
+// attribute
+app.post('/attribute/create',auth, attributeController.createAttribute);
+app.post('/attribute/update',auth, attributeController.updateAttribute);
+app.get('/attributes', attributeController.attributes);
+app.get('/attribute/:id', attributeController.attributeById);
+app.post('/attribute/delete',auth, attributeController.attributeDelete);
 
 module.exports= app;
