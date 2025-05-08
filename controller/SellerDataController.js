@@ -1,7 +1,7 @@
 const userData = require('../models/User');
 const sellerData = require('../models/SellerData');
 
-const createSellerShop = async(request,responce) => {
+const createSellerShop = async(request,response) => {
     try {
 
         const auth = request.user;
@@ -19,23 +19,23 @@ const createSellerShop = async(request,responce) => {
         });
         sellerShop.save();
 
-        return responce
+        return response
         .status(200)
         .send({ status: true, data: sellerShop, message: "Seller Shop Create Success" });
 
         
     } catch (error) {
-        responce.status(400).send(error.message);
+        response.status(400).send(error.message);
     }
 }
 
-const updateSellerShop = async(request,responce) => {
+const updateSellerShop = async(request,response) => {
     try {
 
         const auth = request.user;
         const checkSeller = await sellerData.findOne({user_id:auth.user._id});
         if(!checkSeller){
-            return responce
+            return response
             .status(400)
             .send({ status: false, data: sellerShop, message: "Seller Shop Not Found" });
         }
@@ -53,24 +53,24 @@ const updateSellerShop = async(request,responce) => {
         }});
 
         
-        return responce
+        return response
         .status(200)
         .send({ status: true, data: checkSeller, message: "Seller Shop Update Success" });
 
         
     } catch (error) {
-        responce.status(400).send(error.message);
+        response.status(400).send(error.message);
     }
 }
 
-const getSellerShop = async(request,responce) => {
+const getSellerShop = async(request,response) => {
     try {
 
         const auth = request.user;
         const checkSeller = await sellerData.findOne({user_id:auth.user._id}).populate('user_id');
 
         if(!checkSeller){
-            return responce
+            return response
             .status(400)
             .send({ status: false, data: null, message: "Seller Shop Not Found" });
         }
@@ -78,13 +78,13 @@ const getSellerShop = async(request,responce) => {
 
 
         
-        return responce
+        return response
         .status(200)
         .send({ status: true, data: checkSeller, message: "Seller Shop Update Success" });
 
         
     } catch (error) {
-        responce.status(400).send(error.message);
+        response.status(400).send(error.message);
     }
 }
 

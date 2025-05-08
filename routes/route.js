@@ -54,6 +54,7 @@ app.post('/category/update',auth, categoryController.updateCategory);
 app.get('/categories', categoryController.categories);
 app.get('/category/:id', categoryController.categoryById);
 app.post('/category/delete',auth, categoryController.categoryDelete);
+app.post('/category/link-attribute',auth, categoryController.categoryAttributeLink);
 
 // attribute
 app.post('/attribute/create',auth, attributeController.createAttribute);

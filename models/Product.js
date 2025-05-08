@@ -16,13 +16,22 @@ const product = new mongoose.Schema({
         type: Number,
         required: true,
       },
+      status: {
+        type: Number,
+        required: true,
+      },
       stock: {
         type: Number,
         required: true,
       },
-      seller_id: {
+      seller: {
         type: mongoose.Schema.ObjectId,
         ref: 'seller_data',
+        required: true,
+      },
+      category: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'category',
         required: true,
       }
      

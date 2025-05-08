@@ -55,12 +55,12 @@ const sendMailOtp = async (userDetail , otp) => {
   }
 };
 
-const register = async (request, responce) => {
+const register = async (request, response) => {
   try {
     const passwordHash = await passwordDcrypt(request.body.password);
     const checkEmil = await user.findOne({ email: request.body.email });
     if (checkEmil) {
-      responce
+      response
         .status(400)
         .send({ success: false, data: null, message: "Email Already Exist" });
     }
@@ -83,17 +83,17 @@ const register = async (request, responce) => {
     });
     await OtpVerification.save();
     await sendMailOtp(createUser , OtpVerification.code);
-    responce.status(200).send({
+    response.status(200).send({
       success: true,
       data: createUser,
       message: "User registered successfully",
     });
   } catch (error) {
-    responce.status(400).send(error.message);
+    response.status(400).send(error.message);
   }
 };
 
-const login = async (request, responce) => {
+const login = async (request, response) => {
   const email = request.body.email;
   const password = request.body.password;
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -112,7 +112,7 @@ const login = async (request, responce) => {
           }});
           await sendMailOtp(userData ,otp);
   
-          return responce
+          return response
           .status(400)
           .send({ status: false, data: null, message: "Please verify your otp" });
         }else{
@@ -126,7 +126,7 @@ const login = async (request, responce) => {
           });
           OtpVerification.save();
            await sendMailOtp(userData ,OtpVerification.code);
-          return responce
+          return response
           .status(400)
           .send({ status: false, data: null, message: "Please verify your otp" });
         }
@@ -136,21 +136,21 @@ const login = async (request, responce) => {
 
       const userObj = userData.toObject();
       userObj.token = token;
-      responce
+      response
         .status(200)
         .send({ status: true, data: userObj, message: "Login Success" });
     } else {
-      responce
+      response
         .status(400)
         .send({ status: false, data: null, message: "Invalide Password" });
     }
   } else {
-    responce
+    response
       .status(400)
       .send({ status: false, data: null, message: "Email Not Exist" });
   }
 };
-const updatePassword = async (request, responce) => {
+const updatePassword = async (request, response) => {
   try {
     const authUser = request.user;
 
@@ -173,22 +173,22 @@ const updatePassword = async (request, responce) => {
           },
         }
       );
-      return responce.status(200).send({
+      return response.status(200).send({
         status: true,
         data: authUser,
         message: "Password Update Success",
       });
     } else {
-      return responce
+      return response
         .status(400)
         .send({ status: true, data: null, message: "In Currect Password" });
     }
   } catch (error) {
-    responce.status(400).send(error.message);
+    response.status(400).send(error.message);
   }
 };
 
-const updateProfile = async (request, responce) => {
+const updateProfile = async (request, response) => {
   try {
     const authUser = request.user;
    
@@ -204,13 +204,13 @@ const updateProfile = async (request, responce) => {
 
     const updateUser = await user.findOne({ _id: authUser.user._id });
 
-    return responce.status(200).send({
+    return response.status(200).send({
       status: true,
       data: updateUser,
       message: "Profile Update Success",
     });
   } catch (error) {
-    responce.status(400).send(error.message);
+    response.status(400).send(error.message);
   }
 };
 const getProfile = async (request, response) => {

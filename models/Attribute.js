@@ -4,9 +4,12 @@ const attribute = new mongoose.Schema({
         type: String,
         required: true,
       },
-      option: {
+      option: [{
         type: String,
-        required: true,
-      }
+      }],
+      option_code: [{
+        type: String,
+      }]
+
 });
 module.exports = mongoose.model('attribute', attribute);
