@@ -28,6 +28,7 @@ const sellerDataController = require('../controller/SellerDataController');
 const productController = require('../controller/ProductController');
 const categoryController = require('../controller/CategoryController');
 const attributeController = require('../controller/AttributeController');
+const cartController = require('../controller/CartController');
 
 
 app.post('/registerd', upload.single('image') ,authController.register);
@@ -47,6 +48,17 @@ app.get('/seller/shop',auth, sellerDataController.getSellerShop);
 app.post('/seller/create-product',auth, productController.productCreate);
 app.post('/seller/update-product',auth, productController.productUpdate);
 app.get('/seller/products',auth, productController.products);
+app.get('/seller/product-by-id/:id',auth, productController.productById);
+app.post('/seller/product-active-inactive',auth, productController.productActiveInactive);
+
+//  product user route
+
+app.get('/user/products', productController.userProducts);
+app.get('/user/product-by-id/:id', productController.userProductById);
+
+//  cart user route
+
+app.post('/cart/store-update',auth, cartController.addToCart);
 
 // category
 app.post('/category/create',auth, categoryController.createCategory);
