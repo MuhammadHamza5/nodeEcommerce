@@ -5,6 +5,7 @@ const checkValidToken = async (request, response, next) => {
   const token =
     request.body.token ||
     request.query.token ||
+    request.params.token ||
     request.headers["authorization"];
   if (!token) {
     response.status(400).send({ message: "User is not authenticate" });

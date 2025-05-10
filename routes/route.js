@@ -59,6 +59,7 @@ app.get('/user/product-by-id/:id', productController.userProductById);
 //  cart user route
 
 app.post('/cart/store-update',auth, cartController.addToCart);
+app.get('/cart/get-cart',auth, cartController.getCart);
 
 // category
 app.post('/category/create',auth, categoryController.createCategory);
