@@ -60,6 +60,9 @@ app.get('/user/product-by-id/:id', productController.userProductById);
 
 app.post('/cart/store-update',auth, cartController.addToCart);
 app.get('/cart/get-cart',auth, cartController.getCart);
+app.post('/cart/update-quantity',auth, cartController.updateQuantity);
+app.post('/cart/clear',auth, cartController.clearCart);
+app.post('/cart/delete-by-id',auth, cartController.clearCartById);
 
 // category
 app.post('/category/create',auth, categoryController.createCategory);
