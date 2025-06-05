@@ -63,6 +63,7 @@ app.get('/cart/get-cart',auth, cartController.getCart);
 app.post('/cart/update-quantity',auth, cartController.updateQuantity);
 app.post('/cart/clear',auth, cartController.clearCart);
 app.post('/cart/delete-by-id',auth, cartController.clearCartById);
+app.post('/cart/checkout',auth, cartController.checkout);
 
 // category
 app.post('/category/create',auth, categoryController.createCategory);

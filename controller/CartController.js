@@ -3,50 +3,154 @@ const productModel = require("../models/Product");
 const sellerDataModel = require("../models/SellerData");
 const productAttributeModel = require("../models/ProductAttribute");
 const cartAttributeModel = require("../models/CartAttribute");
+const orderModel = require("../models/Order");
+const orderProductModel = require("../models/OrderProductId");
+
+// const addToCart = async (request, response) => {
+
+//   try {
+//     const auth = request.user;
+//     const productId = request.body.product_id;
+//     const quantity = request.body.quantity;
+//     const cartAttributes = request.body.cart_attribute;
+//     if (auth) {
+//       const product = await productModel.findOne({ _id: productId });
+//       if (!product) {
+//         return response.status(404).json({ message: "Product not found" });
+//       }
+//       for (const cartAttribute of cartAttributes) {
+//         const productAttribute = await productAttributeModel.findOne({
+//           _id: cartAttribute.attribute_id,
+//           product: product._id,
+//         });
+//         if (!productAttribute) {
+//           return response
+//             .status(404)
+//             .json({ message: "Product Attribute not found" });
+//         }
+//       }
+
+//       const checkCartData = await cartModel.find({
+//         user: auth.user._id,
+//         product: productId,
+//       });
+//       if (checkCartData) {
+//         for (const cartAttribute of cartAttributes) {
+//           const checkCartAttribute = await cartAttributeModel.findOne({
+//             product_attribute: cartAttribute.attribute_id,
+//             cart: checkCartData._id,
+//           });
+
+//         }
+//         return response
+//           .status(400)
+//           .json({ message: "Product already in cart" });
+//       }
+
+//       const cartData = new cartModel({
+//         user: auth.user._id,
+//         product: product._id,
+//         shop: product.seller,
+//         quantity: quantity,
+//       });
+//       cartData.save();
+//       for (const cartAttribute of cartAttributes) {
+//         const cartAttributeData = new cartAttributeModel({
+//           cart: cartData._id,
+//           product_attribute: cartAttribute.attribute_id,
+//         });
+//         cartAttributeData.save();
+//       }
+//       return response.status(200).send({
+//         status: true,
+//         data: null,
+//         message: "Add to Cart Success",
+//       });
+//     }
+//   } catch (error) {
+//     return response.status(500).send(error.message);
+//   }
+// };
+
 const addToCart = async (request, response) => {
   try {
     const auth = request.user;
-    const productId = request.body.product_id;
-    const quantity = request.body.quantity;
-    const cartAttributes = request.body.cart_attribute;
-    if (auth) {
-      const product = await productModel.findOne({ _id: productId });
-      if (!product) {
-        return response.status(404).json({ message: "Product not found" });
-      }
-      for (const cartAttribute of cartAttributes) {
-        const productAttribute = await productAttributeModel.findOne({
-          _id: cartAttribute.attribute_id,
-          product: product._id,
-        });
-        if (!productAttribute) {
-          return response
-            .status(404)
-            .json({ message: "Product Attribute not found" });
-        }
-      }
+    const { product_id, quantity, cart_attribute } = request.body;
 
-      const cartData = new cartModel({
-        user: auth.user._id,
-        product: product._id,
-        shop: product.seller,
-        quantity: quantity,
-      });
-      cartData.save();
-      for (const cartAttribute of cartAttributes) {
-        const cartAttributeData = new cartAttributeModel({
-          cart: cartData._id,
-          product_attribute: cartAttribute.attribute_id,
-        });
-        cartAttributeData.save();
-      }
-      return response.status(200).send({
-        status: true,
-        data: null,
-        message: "Add to Cart Success",
-      });
+    if (!auth) {
+      return response.status(401).json({ message: "Unauthorized" });
     }
+
+    const product = await productModel.findById(product_id);
+    if (!product) {
+      return response.status(404).json({ message: "Product not found" });
+    }
+
+    for (const attr of cart_attribute) {
+      const productAttribute = await productAttributeModel.findOne({
+        _id: attr.attribute_id,
+        product: product._id,
+      });
+      if (!productAttribute) {
+        return response
+          .status(404)
+          .json({ message: "Product Attribute not found" });
+      }
+    }
+
+    const existingCarts = await cartModel.find({
+      user: auth.user._id,
+      product: product_id,
+    });
+
+    for (const cart of existingCarts) {
+      const existingAttributes = await cartAttributeModel.find({
+        cart: cart._id,
+      });
+
+      const existingAttrIds = existingAttributes
+        .map((a) => a.product_attribute.toString())
+        .sort();
+      const newAttrIds = cart_attribute
+        .map((a) => a.attribute_id.toString())
+        .sort();
+
+      const isSameAttributes =
+        existingAttrIds.length === newAttrIds.length &&
+        existingAttrIds.every((val, index) => val === newAttrIds[index]);
+
+      if (isSameAttributes) {
+        cart.quantity = Number(cart.quantity) + Number(quantity);
+        await cart.save();
+        return response.status(200).json({
+          status: true,
+          message: "Cart updated: quantity increased",
+        });
+      }
+    }
+
+    const newCart = new cartModel({
+      user: auth.user._id,
+      product: product._id,
+      shop: product.seller,
+      quantity: quantity,
+    });
+    await newCart.save();
+
+    for (const attr of cart_attribute) {
+      const newCartAttribute = new cartAttributeModel({
+        cart: newCart._id,
+        product_attribute: attr.attribute_id,
+      });
+      await newCartAttribute.save();
+    }
+
+    return response.status(200).json({
+      status: true,
+      message: "Add to Cart Success",
+    });
   } catch (error) {
+    console.error("Add to Cart Error:", error);
     return response.status(500).send(error.message);
   }
 };
@@ -59,7 +163,6 @@ const getCart = async (request, response) => {
       return response.status(401).json({ message: "Unauthorized" });
     }
 
-    // Get all cart items for the user and populate product, category, shop, and user
     const cartData = await cartModel
       .find({ user: auth.user._id })
       .populate(["user", "product", "shop"])
@@ -71,25 +174,21 @@ const getCart = async (request, response) => {
         .json({ status: false, data: null, message: "Cart Is Empty" });
     }
 
-    // Group by shop
     const groupedByShop = {};
     let totalPrice = 0;
 
     for (const item of cartData) {
       const shopId = item.shop._id.toString();
 
-      // Fetch attributes for each cart item
       const attributes = await cartAttributeModel
         .find({ cart: item._id })
         .populate("product_attribute");
 
-      // Add attributes to cart item
       const itemWithAttributes = {
         ...item.toObject(),
         attributes: attributes,
       };
 
-      // Calculate total price
       const price =
         item.product.descount_price > 0
           ? item.product.descount_price
@@ -97,7 +196,6 @@ const getCart = async (request, response) => {
 
       totalPrice += price * item.quantity;
 
-      // Group by shop
       if (!groupedByShop[shopId]) {
         groupedByShop[shopId] = {
           shop_id: item.shop._id,
@@ -183,34 +281,6 @@ const clearCart = async (request, response) => {
   }
 };
 
-// const clearCart = async (request, response) => {
-//   try {
-//     const auth = request.user;
-
-//     const cartData = await cartModel.find({ user: auth.user._id });
-//     if (!cartData || cartData.length === 0) {
-//       return response
-//         .status(404)
-//         .send({ status: false, message: "Cart not found" });
-//     }
-
-//     for (const cart of cartData) {
-//       await cartAttributeModel.deleteMany({ cart: cart._id });
-//     }
-
-//     await cartModel.deleteMany({ user: auth.user._id });
-
-//     return response.status(200).send({
-//       status: true,
-//       data: null,
-//       message: "Cart Delete Success",
-//     });
-//   } catch (error) {
-//     console.error("Clear Cart Error:", error);
-//     return response.status(500).send({ status: false, message: error.message });
-//   }
-// };
-
 const clearCartById = async (request, response) => {
   try {
     const auth = request.user;
@@ -238,10 +308,59 @@ const clearCartById = async (request, response) => {
   }
 };
 
+const checkout = async (request, response) => {
+  try {
+    const auth = request.user;
+    if (!auth) {
+      return response
+        .status(400)
+        .send({ status: false, message: "User Is Not Authenticated" });
+    }
+
+    const cart = await cartModel.find({ user: auth.user._id });
+    const order = new orderModel({
+      user: auth.user._id,
+      total_price: 1,
+      subtotal_price: 1,
+      discount: 1,
+      address: request.body.address,
+      country: request.body.country,
+      city: request.body.city,
+      lat: request.body.lat,
+      long: request.body.long,
+      phone_code: request.body.phone_code,
+      phone_number: request.body.phone_number,
+    });
+    await order.save();
+    for (const item of cart) {
+      const cartAttribute = await cartAttributeModel.find({ cart: item._id });
+      // return response.status(400).send({ status: false, data: cartAttribute });
+      const orderProduct = new orderProductModel({
+        order: order._id,
+        product: item.product,
+        seller: item.shop,
+        quantity: item.quantity,
+      });
+      await orderProduct.save();
+
+      // for (const itemAttri of cartAttribute) {
+
+      // }
+    }
+
+    return response
+      .status(200)
+      .send({ status: true, data: cart, message: "User Authenticated" });
+  } catch (error) {
+    console.error("Get Cart Error:", error);
+    return response.status(500).send({ status: false, message: error.message });
+  }
+};
 module.exports = {
   addToCart,
   getCart,
   updateQuantity,
   clearCart,
   clearCartById,
+  checkout,
 };
