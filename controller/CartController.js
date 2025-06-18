@@ -5,6 +5,7 @@ const productAttributeModel = require("../models/ProductAttribute");
 const cartAttributeModel = require("../models/CartAttribute");
 const orderModel = require("../models/Order");
 const orderProductModel = require("../models/OrderProductId");
+const orderProductAttributeModel = require("../models/OrderProductAttribute");
 
 // const addToCart = async (request, response) => {
 
@@ -311,6 +312,8 @@ const clearCartById = async (request, response) => {
 const checkout = async (request, response) => {
   try {
     const auth = request.user;
+    total_price = 0;
+    discount_price = 0;
     if (!auth) {
       return response
         .status(400)
@@ -318,11 +321,26 @@ const checkout = async (request, response) => {
     }
 
     const cart = await cartModel.find({ user: auth.user._id });
+    if (cart.length === 0) {
+      return response
+        .status(404)
+        .send({ status: false, message: "Cart is empty" });
+    }
+    for (const item of cart) {
+      const product = await productModel.findOne(item.product);
+      if (product.descount_price > 0) {
+        total_price += product.descount_price * item.quantity;
+      } else {
+        total_price += product.price * item.quantity;
+      }
+    }
+    // return response.status(400).send({ status: false, data: total_price });
+
     const order = new orderModel({
       user: auth.user._id,
-      total_price: 1,
-      subtotal_price: 1,
-      discount: 1,
+      total_price: total_price,
+      subtotal_price: total_price,
+      discount: discount_price,
       address: request.body.address,
       country: request.body.country,
       city: request.body.city,
@@ -343,14 +361,32 @@ const checkout = async (request, response) => {
       });
       await orderProduct.save();
 
-      // for (const itemAttri of cartAttribute) {
+      for (const itemAttri of cartAttribute) {
+        const productAttri = await productAttributeModel.findOne({
+          _id: itemAttri.product_attribute,
+        });
+        const orderProductAttri = new orderProductAttributeModel({
+          order_product: orderProduct._id,
+          attribute: productAttri._id,
+          color: productAttri.color_code,
+          name: productAttri.name,
+        });
+        await orderProductAttri.save();
+      }
+    }
 
-      // }
+    const cartDelete = await cartModel.find({ user: auth.user._id });
+
+    if (cartDelete && cartDelete.length > 0) {
+      const cartIds = cartDelete.map((cart) => cart._id);
+
+      await cartAttributeModel.deleteMany({ cart: { $in: cartIds } });
+      await cartModel.deleteMany({ user: auth.user._id });
     }
 
     return response
       .status(200)
-      .send({ status: true, data: cart, message: "User Authenticated" });
+      .send({ status: true, data: null, message: "Checkout Success" });
   } catch (error) {
     console.error("Get Cart Error:", error);
     return response.status(500).send({ status: false, message: error.message });

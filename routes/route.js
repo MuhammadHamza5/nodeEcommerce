@@ -29,6 +29,7 @@ const productController = require('../controller/ProductController');
 const categoryController = require('../controller/CategoryController');
 const attributeController = require('../controller/AttributeController');
 const cartController = require('../controller/CartController');
+const favouriteController = require('../controller/FavouriteController');
 
 
 app.post('/registerd', upload.single('image') ,authController.register);
@@ -79,5 +80,8 @@ app.post('/attribute/update',auth, attributeController.updateAttribute);
 app.get('/attributes', attributeController.attributes);
 app.get('/attribute/:id', attributeController.attributeById);
 app.post('/attribute/delete',auth, attributeController.attributeDelete);
+
+// favourite
+app.post('/favourite/add-remove',auth, favouriteController.addRemoveFavourite);
 
 module.exports= app;
